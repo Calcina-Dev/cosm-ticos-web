@@ -14,10 +14,10 @@ const nextConfig: NextConfig = {
     // Usamos el API v2 en el puerto 3001
     let apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://127.0.0.1:3001";
 
-    // Normalizar la URL: Railway internal URLs (como cosmeticos-api2.railway.internal)
-    // a veces no traen el protocolo escrito, lo cual rompe el build de Next.js
+    // Normalizar la URL: Railway public/internal URLs
     if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
-      apiUrl = `http://${apiUrl}`;
+      // Usar https por defecto para evitar redirecciones 301 que degradan POST a GET
+      apiUrl = `https://${apiUrl}`;
     }
 
     return [
