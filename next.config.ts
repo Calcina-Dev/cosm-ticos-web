@@ -16,8 +16,9 @@ const nextConfig: NextConfig = {
 
     // Normalizar la URL: Railway public/internal URLs
     if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
-      // Usar https por defecto para evitar redirecciones 301 que degradan POST a GET
-      apiUrl = `https://${apiUrl}`;
+      // Usar http para local y https para el resto (Railway) para evitar redirecciones 301.
+      const isLocal = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
+      apiUrl = isLocal ? `http://${apiUrl}` : `https://${apiUrl}`;
     }
 
     return [
