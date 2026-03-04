@@ -9,6 +9,8 @@ export enum DocumentType {
     ORDEN_COMPRA = 'ORDEN_COMPRA',
     RECIBO_COBRO = 'RECIBO_COBRO',
     RECIBO_PAGO = 'RECIBO_PAGO',
+    NOTA_INGRESO = 'NOTA_INGRESO',
+    NOTA_SALIDA = 'NOTA_SALIDA',
 }
 
 export interface DocumentSeries {

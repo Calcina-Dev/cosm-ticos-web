@@ -189,20 +189,22 @@ export function SalesList() {
                             <TableHead>Vendedor</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead className="text-right">Total Neto</TableHead>
+                            <TableHead className="text-right">Total Pagado</TableHead>
+                            <TableHead className="text-right">Deuda Pendiente</TableHead>
                             <TableHead className="text-center">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-64 text-center">
+                                <TableCell colSpan={10} className="h-64 text-center">
                                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
                                     <p className="text-sm text-muted-foreground mt-2">Cargando...</p>
                                 </TableCell>
                             </TableRow>
                         ) : sales.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                                <TableCell colSpan={10} className="h-48 text-center text-muted-foreground">
                                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-20" />
                                     No se encontraron ventas.
                                 </TableCell>
@@ -265,6 +267,16 @@ export function SalesList() {
                                     {/* Total */}
                                     <TableCell className="text-right font-black text-slate-700">
                                         {formatCurrency(sale.totalAmount)}
+                                    </TableCell>
+
+                                    {/* Total Pagado */}
+                                    <TableCell className="text-right font-medium text-emerald-600">
+                                        {formatCurrency(sale.totalPaid ?? 0)}
+                                    </TableCell>
+
+                                    {/* Deuda Pendiente */}
+                                    <TableCell className="text-right font-medium text-rose-600">
+                                        {formatCurrency(sale.debtRemaining ?? 0)}
                                     </TableCell>
 
                                     {/* Acciones */}

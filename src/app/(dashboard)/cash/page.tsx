@@ -67,6 +67,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { TransactionModal } from "@/features/cash/components/transaction-modal";
 import { CashClosingModal } from "@/features/cash/components/cash-closing-modal";
+import { PaymentMethodDetailModal } from "@/features/cash/components/payment-method-detail-modal";
 import {
   cashTransactionsService,
   CreateTransactionDto,
@@ -88,6 +89,10 @@ export default function CashPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [isTransactionOpen, setIsTransactionOpen] = useState(false);
   const [isClosingModalOpen, setIsClosingModalOpen] = useState(false);
+
+  // Payment Method Detail State
+  const [isMethodDetailOpen, setIsMethodDetailOpen] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState("");
 
   const openForm = useForm<z.infer<typeof openSessionSchema>>({
     resolver: zodResolver(openSessionSchema) as any,
@@ -152,12 +157,29 @@ export default function CashPage() {
   const metrics = useMemo(() => {
     let incomes = 0;
     let expenses = 0;
+    let physicalIncomes = 0; // Dinero físico
+    let physicalExpenses = 0; // Egreso físico
+
     transactions.forEach((tx) => {
-      if (tx.type === "INCOME") incomes += Number(tx.amount);
-      if (tx.type === "EXPENSE") expenses += Number(tx.amount);
+      if (tx.type === "INCOME") {
+        incomes += Number(tx.amount);
+        // Si no tiene nombre de banco entre paréntesis, asumimos que es efectivo que entró a la gaveta
+        if (!tx.description?.match(/\((.*?)\)/)) {
+          physicalIncomes += Number(tx.amount);
+        }
+      }
+      if (tx.type === "EXPENSE") {
+        expenses += Number(tx.amount);
+        // Solo descontamos del cuadro físico de caja si no fue devuelto usando método bancario/tarjeta
+        if (!tx.description?.match(/\((.*?)\)/)) {
+          physicalExpenses += Number(tx.amount);
+        }
+      }
     });
+
     const net = incomes - expenses;
-    const currentTotal = (session?.startAmount || 0) + net;
+    const currentTotal = (session?.startAmount || 0) + physicalIncomes - physicalExpenses;
+
     return { incomes, expenses, net, currentTotal };
   }, [transactions, session]);
 
@@ -345,10 +367,15 @@ export default function CashPage() {
                   <div className="text-3xl font-black text-slate-900 tracking-tight">
                     {formatCurrency(metrics.currentTotal)}
                   </div>
-                  <p className="text-xs font-medium text-slate-500 mt-1 flex items-center">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
-                    SESIÓN ABIERTA
-                  </p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs font-medium text-slate-500 flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
+                      SESIÓN ABIERTA
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Solo Efectivo
+                    </p>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -393,6 +420,9 @@ export default function CashPage() {
                   <div className="text-2xl font-bold text-emerald-600">
                     +{formatCurrency(metrics.incomes)}
                   </div>
+                  <p className="text-xs text-emerald-600/80 mt-1 font-medium">
+                    (Todos los métodos)
+                  </p>
                 </div>
               </div>
             </Card>
@@ -436,12 +466,17 @@ export default function CashPage() {
                   {session.paymentSummary.map((ps, idx) => (
                     <div
                       key={idx}
-                      className="bg-slate-700/80 backdrop-blur-md px-4 py-2 rounded-lg border border-slate-600/50 flex-1 md:flex-none"
+                      onClick={() => {
+                        setSelectedMethod(ps.method)
+                        setIsMethodDetailOpen(true)
+                      }}
+                      className="bg-slate-700/80 backdrop-blur-md px-4 py-2 rounded-lg border border-slate-600/50 flex-1 md:flex-none cursor-pointer hover:bg-slate-700 hover:border-emerald-500/50 hover:scale-105 hover:-translate-y-1 transition-all group"
+                      title={`Ver detalles de ${ps.method}`}
                     >
-                      <p className="text-xs text-slate-400 uppercase font-bold tracking-wider">
+                      <p className="text-xs text-slate-400 uppercase font-bold tracking-wider group-hover:text-emerald-400 transition-colors">
                         {ps.method}
                       </p>
-                      <p className="text-lg font-black text-white">
+                      <p className="text-lg font-black text-white group-hover:text-emerald-300 transition-colors">
                         {formatCurrency(ps.total)}
                       </p>
                     </div>
@@ -583,6 +618,13 @@ export default function CashPage() {
         open={isTransactionOpen}
         onOpenChange={setIsTransactionOpen}
         onSuccess={fetchData}
+      />
+
+      <PaymentMethodDetailModal
+        open={isMethodDetailOpen}
+        onOpenChange={setIsMethodDetailOpen}
+        methodName={selectedMethod}
+        transactions={transactions}
       />
 
       {session && (

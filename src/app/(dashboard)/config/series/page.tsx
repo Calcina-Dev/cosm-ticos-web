@@ -190,6 +190,8 @@ export default function SeriesPage() {
                                                     <SelectItem value={DocumentType.FACTURA}>Factura Electrónica</SelectItem>
                                                     <SelectItem value={DocumentType.GUIA_REMISION}>Guía de Remisión</SelectItem>
                                                     <SelectItem value={DocumentType.NOTA_DEBITO}>Nota de Débito</SelectItem>
+                                                    <SelectItem value={DocumentType.NOTA_INGRESO}>Nota de Ingreso</SelectItem>
+                                                    <SelectItem value={DocumentType.NOTA_SALIDA}>Nota de Salida</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

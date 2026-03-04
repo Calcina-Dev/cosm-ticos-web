@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
     ReactFlow,
     Background,
@@ -196,6 +197,7 @@ interface DocumentFlowCanvasProps {
 }
 
 export default function DocumentFlowCanvas({ initialNodes, initialEdges }: DocumentFlowCanvasProps) {
+    const router = useRouter();
     // Apply layout once and set to state
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -217,40 +219,127 @@ export default function DocumentFlowCanvas({ initialNodes, initialEdges }: Docum
             };
         });
 
-        // 🏗️ Grouping for simple horizontal layout
-        const typeOrder = ['quotation', 'purchase', 'sale', 'group', 'payment', 'stock'];
-        const columns: Record<string, any[]> = {};
-        typeOrder.forEach(t => columns[t] = []);
+        // 🏗️ Hierarchical layout based on edges
+        const finalNodes: any[] = [];
+        const columnGap = 350;
+        const rowGap = 160;
 
-        initialNodes.forEach(node => {
-            if (columns[node.type]) columns[node.type].push(node);
-            else {
-                if (!columns['other']) columns['other'] = [];
-                columns['other'].push(node);
+        // 1. Calculate indegree and adjacency list
+        const inDegree: Record<string, number> = {};
+        const adjList: Record<string, string[]> = {};
+
+        initialNodes.forEach(n => {
+            inDegree[n.id] = 0;
+            adjList[n.id] = [];
+        });
+
+        initialEdges.forEach(e => {
+            if (inDegree[e.target] !== undefined) {
+                inDegree[e.target]++;
+            }
+            if (adjList[e.source]) {
+                adjList[e.source].push(e.target);
             }
         });
 
-        const finalNodes: any[] = [];
-        let currentX = 0;
-        const columnGap = 380;
-        const rowGap = 160;
+        // 2. BFS to assign hierarchical levels
+        const levels: Record<string, number> = {};
+        const queue: { id: string, level: number }[] = [];
 
-        Object.keys(columns).forEach(type => {
-            const colNodes = columns[type];
-            if (colNodes.length === 0) return;
+        // Find roots (nodes with no incoming edges)
+        initialNodes.forEach(n => {
+            if (inDegree[n.id] === 0) {
+                queue.push({ id: n.id, level: 0 });
+                levels[n.id] = 0;
+            }
+        });
+
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            const neighbors = adjList[current.id] || [];
+
+            for (const neighbor of neighbors) {
+                // Determine maximum depth to avoid nodes overlapping backwards
+                if (levels[neighbor] === undefined || levels[neighbor] < current.level + 1) {
+                    levels[neighbor] = current.level + 1;
+                    queue.push({ id: neighbor, level: current.level + 1 });
+                }
+            }
+        }
+
+        // Handle potential disconnected nodes
+        initialNodes.forEach(n => {
+            if (levels[n.id] === undefined) {
+                levels[n.id] = 0;
+            }
+        });
+
+        // 3. Group by level and assign coordinates
+        const nodesByLevel: Record<number, any[]> = {};
+        initialNodes.forEach(n => {
+            const lvl = levels[n.id];
+            if (!nodesByLevel[lvl]) nodesByLevel[lvl] = [];
+            nodesByLevel[lvl].push(n);
+        });
+
+        // 4. Position nodes
+        Object.keys(nodesByLevel).forEach(levelStr => {
+            const level = parseInt(levelStr);
+            const colNodes = nodesByLevel[level];
+
+            // Center nodes vertically relative to the root
+            const startY = -((colNodes.length - 1) * rowGap) / 2;
 
             colNodes.forEach((node, index) => {
                 finalNodes.push({
                     ...node,
-                    position: { x: currentX, y: index * rowGap },
+                    position: {
+                        x: level * columnGap,
+                        y: startY + (index * rowGap)
+                    },
                 });
             });
-            currentX += columnGap;
         });
 
         setNodes(finalNodes);
         setEdges(styledEdges);
     }, [initialNodes, initialEdges, setNodes, setEdges]);
+
+    const handleNodeClick = React.useCallback(
+        (_: React.MouseEvent, node: FlowNode) => {
+            const [type] = node.id.split(':');
+
+            // Try to extract document number like NV01-000011 to use in search
+            const match = typeof node.data.label === 'string' ? node.data.label.match(/[A-Z0-9]+-\d+/) : null;
+            const searchParam = match ? `?search=${match[0]}` : '';
+
+            switch (type) {
+                case 'SALE':
+                    router.push(`/sales${searchParam}`);
+                    break;
+                case 'PURCHASE':
+                    router.push(`/purchases${searchParam}`);
+                    break;
+                case 'QUOTATION':
+                    router.push(`/sales/quotations${searchParam}`);
+                    break;
+                case 'STOCK_MOVEMENT':
+                    router.push(`/inventory/movements${searchParam}`);
+                    break;
+                case 'CASH_TRANSACTION':
+                    router.push(`/cash`);
+                    break;
+                case 'CREDIT_MOVEMENT':
+                    if (node.data.isExpense) {
+                        router.push(`/finance/payables${searchParam}`);
+                    } else {
+                        router.push(`/finance/receivables${searchParam}`);
+                    }
+                    break;
+            }
+        },
+        [router]
+    );
 
     return (
         <div className="w-full h-[600px] border rounded-3xl overflow-hidden bg-slate-50/30 group">
@@ -259,6 +348,7 @@ export default function DocumentFlowCanvas({ initialNodes, initialEdges }: Docum
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
+                onNodeClick={handleNodeClick}
                 nodeTypes={CustomNodes}
                 fitView
                 fitViewOptions={{ padding: 0.2 }}

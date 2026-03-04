@@ -50,7 +50,7 @@ export function AccountDetailsModal({ account, isOpen, onClose, defaultInvoiceId
     const { data: pendingInvoices } = useQuery({
         queryKey: ["pending-invoices", account.id],
         queryFn: () => creditsService.getPendingInvoices(account.id),
-        enabled: isOpen && !!account.supplierId
+        enabled: isOpen
     });
 
     const { data: movements, isLoading: loadingMovements, refetch: refetchMovements } = useQuery({
@@ -82,7 +82,7 @@ export function AccountDetailsModal({ account, isOpen, onClose, defaultInvoiceId
             setIsSubmitting(true);
             const selectedInvoice = pendingInvoices?.find(inv => inv.id === selectedInvoiceId);
             const description = selectedInvoice
-                ? `${selectedInvoice.supplierDocumentNumber || 'S/N'}`
+                ? `${account.customerId ? 'VENTA' : 'FACTURA'} ${selectedInvoice.documentSeries || ''}-${selectedInvoice.documentNumber || 'S/N'}`
                 : "ABONO A CUENTA";
 
             await creditsService.registerPayment({
@@ -91,7 +91,7 @@ export function AccountDetailsModal({ account, isOpen, onClose, defaultInvoiceId
                 methodId,
                 description,
                 referenceId: selectedInvoiceId || undefined,
-                referenceType: selectedInvoiceId ? 'PURCHASE_INVOICE' : undefined
+                referenceType: selectedInvoiceId ? (account.customerId ? 'SALE' : 'PURCHASE_INVOICE') : undefined
             });
             toast.success("Abono registrado con éxito");
             setAmount("");
@@ -167,22 +167,24 @@ export function AccountDetailsModal({ account, isOpen, onClose, defaultInvoiceId
                                     </div>
                                 </div>
 
-                                {account.supplierId && pendingInvoices && pendingInvoices.length > 0 && (
+                                {pendingInvoices && pendingInvoices.length > 0 && (
                                     <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Factura (Opcional)</Label>
+                                        <Label className="text-[9px] font-bold text-slate-400 uppercase">
+                                            {account.customerId ? 'Venta' : 'Factura'} (Opcional)
+                                        </Label>
                                         <Select value={selectedInvoiceId} onValueChange={(val) => {
                                             setSelectedInvoiceId(val);
                                             const inv = pendingInvoices.find(i => i.id === val);
                                             if (inv) setAmount(String(inv.balance ?? inv.totalAmount));
                                         }}>
                                             <SelectTrigger className="h-9 text-xs border-slate-200 bg-white">
-                                                <SelectValue placeholder="Aplicar a factura..." />
+                                                <SelectValue placeholder={`Aplicar a ${account.customerId ? 'venta' : 'factura'}...`} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="none" className="text-xs font-bold text-slate-400">Ninguna (Abono general)</SelectItem>
                                                 {pendingInvoices.map(inv => (
                                                     <SelectItem key={inv.id} value={inv.id} className="text-xs">
-                                                        {inv.supplierDocumentNumber || 'S/N'} - Saldo: {formatCurrency(inv.balance ?? inv.totalAmount)}
+                                                        {inv.documentSeries ? `${inv.documentSeries}-${inv.documentNumber}` : (inv.supplierDocumentNumber || 'S/N')} - Saldo: {formatCurrency(inv.balance ?? inv.totalAmount)}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -201,7 +203,8 @@ export function AccountDetailsModal({ account, isOpen, onClose, defaultInvoiceId
                                                 if (!pm.isActive) return false;
                                                 // Si es proveedor, solo mostrar Efectivo
                                                 if (account.supplierId) return pm.code === 'CASH';
-                                                return true;
+                                                // Si es cliente, mostrar todos excepto Crédito
+                                                return pm.code !== 'CREDIT';
                                             }).map(pm => (
                                                 <SelectItem key={pm.id} value={pm.id} className="text-xs">
                                                     {pm.name}

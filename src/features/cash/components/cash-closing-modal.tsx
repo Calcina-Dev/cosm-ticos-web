@@ -71,8 +71,22 @@ export function CashClosingModal({ open, onOpenChange, sessionId, onSuccess }: C
     }
 
     const calculatedTotal = sessionData ?
-        (sessionData.startAmount +
-            (sessionData.transactions?.reduce((acc: number, t: any) => acc + (t.type === 'INCOME' ? t.amount : -t.amount), 0) || 0)
+        (Number(sessionData.startAmount) +
+            (sessionData.transactions?.reduce((acc: number, t: any) => {
+                let val = 0;
+                if (t.type === 'INCOME') {
+                    // Only count physical cash if there's no payment method in parentheses
+                    if (!t.description?.match(/\((.*?)\)/)) {
+                        val = Number(t.amount);
+                    }
+                } else if (t.type === 'EXPENSE') {
+                    // Only subtract physical cash expenses from drawer
+                    if (!t.description?.match(/\((.*?)\)/)) {
+                        val = -Number(t.amount);
+                    }
+                }
+                return acc + val;
+            }, 0) || 0)
         ) : 0
 
     // Update diff when endAmount changes
@@ -112,9 +126,9 @@ export function CashClosingModal({ open, onOpenChange, sessionId, onSuccess }: C
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-slate-500 font-medium">Movimientos Netos:</span>
                                     {/* Placeholder for sum of sales */}
-                                    <span className={`font-semibold ${(calculatedTotal - (sessionData?.startAmount || 0)) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                                        {(calculatedTotal - (sessionData?.startAmount || 0)) >= 0 ? "+" : ""}
-                                        {formatCurrency((calculatedTotal - (sessionData?.startAmount || 0)))}
+                                    <span className={`font-semibold ${(calculatedTotal - Number(sessionData?.startAmount || 0)) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                        {(calculatedTotal - Number(sessionData?.startAmount || 0)) >= 0 ? "+" : ""}
+                                        {formatCurrency((calculatedTotal - Number(sessionData?.startAmount || 0)))}
                                     </span>
                                 </div>
                                 <div className="pt-3 mt-3 border-t border-slate-200 flex justify-between items-center">

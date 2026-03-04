@@ -81,7 +81,13 @@ export const creditsService = {
     },
 
     getPendingInvoices: async (id: string) => {
-        const response = await api.get<any[]>(`/credits/accounts/${id}/pending-invoices`);
-        return response.data;
+        try {
+            const response = await api.get<any[]>(`/credits/accounts/${id}/pending-invoices`);
+            console.log("PENDING INVOICES RESPONSE:", response.data);
+            return response.data;
+        } catch (e) {
+            console.error("PENDING INVOICES ERROR:", e);
+            throw e;
+        }
     }
 };
