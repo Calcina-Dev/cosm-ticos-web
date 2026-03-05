@@ -13,6 +13,7 @@ interface AuthState {
     login: (payload: LoginPayload) => Promise<AuthResponse>;
     logout: () => void;
     setUser: (user: User) => void;
+    setToken: (token: string) => void;
     setCompanyId: (id: string | null) => void;
     setBranchId: (id: string | null) => void;
     _hasHydrated: boolean;
@@ -66,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
                 localStorage.removeItem("auth-storage"); // Clear persisted state
             },
             setUser: (user: User) => set({ user }),
+            setToken: (token: string) => set({ token, isAuthenticated: !!token }),
             setCompanyId: (id: string | null) => set({ companyId: id }),
             setBranchId: (id: string | null) => set({ branchId: id }),
             _hasHydrated: false,

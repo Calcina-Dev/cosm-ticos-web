@@ -28,9 +28,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
+// en top imports:
+import { InviteUserModal } from "@/features/users/components/invite-user-modal";
+import { useState } from "react";
+
 export default function UsersSettingsPage() {
     const queryClient = useQueryClient();
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
+    // ... existing queries ...
     const { data: team, isLoading } = useQuery({
         queryKey: ["team"],
         queryFn: () => usersService.findAll(),
@@ -53,8 +59,11 @@ export default function UsersSettingsPage() {
 
     const columns: ColumnDef<CompanyMembership>[] = [
         {
+            id: "email",
             accessorKey: "user.email",
             header: "Usuario",
+            /* ... */
+
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
@@ -152,18 +161,27 @@ export default function UsersSettingsPage() {
                     <p className="text-muted-foreground">Administra los roles y permisos de acceso para tu personal.</p>
                 </div>
 
-                <Button className="rounded-2xl gap-2 font-bold shadow-lg shadow-indigo-100">
+                <Button
+                    className="rounded-2xl gap-2 font-bold shadow-lg shadow-indigo-100"
+                    onClick={() => setIsInviteModalOpen(true)}
+                >
                     <UserPlus className="h-4 w-4" />
                     Invitar Miembro
                 </Button>
             </div>
+
+            <InviteUserModal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                roles={roles || []}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card className="border-none shadow-sm md:col-span-3 overflow-hidden rounded-3xl">
                     <DataTable
                         columns={columns}
                         data={team || []}
-                        searchKey="user.email"
+                        searchKey="email"
                         placeholder="Buscar por correo..."
                     />
                 </Card>

@@ -64,7 +64,14 @@ export default function LoginPage() {
                 toast.success("Bienvenido al sistema", {
                     icon: <Sparkles className="h-4 w-4 text-blue-500" />,
                 });
-                router.push("/dashboard");
+
+                // Redirección inteligente basada en el rol
+                const user = useAuthStore.getState().user;
+                if (user?.role === 'SUPER_ADMIN') {
+                    router.push("/super-admin/companies");
+                } else {
+                    router.push("/dashboard");
+                }
             }
         } catch (error: any) {
             console.error(error);

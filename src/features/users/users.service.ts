@@ -40,6 +40,11 @@ export const usersService = {
         return response.data;
     },
 
+    inviteUser: async (data: { email: string; roleId: string; password?: string }) => {
+        const response = await api.post<CompanyMembership>("/users/invite", data);
+        return response.data;
+    },
+
     updatePin: async (pin: string) => {
         const response = await api.put<User>("/users/me/pin", { pin });
         return response.data;

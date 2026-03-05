@@ -35,8 +35,8 @@ export const navItems: NavItem[] = [
         requiredPermission: "SALES_VIEW",
         subMenuItems: [
             { title: "Punto de Venta", href: "/pos", requiredPermission: "SALES_CREATE" },
-            { title: "Historial de Ventas", href: "/sales", requiredPermission: "SALES_VIEW" },
-            { title: "Gestión de Caja", href: "/cash", requiredPermission: "CASH_VIEW" },
+            { title: "Historial de Ventas", href: "/pos/sales", requiredPermission: "SALES_VIEW" },
+            { title: "Gestión de Caja", href: "/pos/cash", requiredPermission: "CASH_VIEW" },
         ],
     },
     {
@@ -113,13 +113,13 @@ export const navItems: NavItem[] = [
     },
     {
         title: "Configuración",
-        href: "/config",
+        href: "/settings",
         icon: Settings,
         submenu: true,
         requiredPermission: "SETTINGS_MANAGE",
         subMenuItems: [
-            { title: "Series de Documentos", href: "/config/series", requiredPermission: "SETTINGS_MANAGE" },
-            { title: "Métodos de Pago", href: "/catalog/payment-methods", requiredPermission: "SETTINGS_MANAGE" },
+            { title: "Series de Documentos", href: "/settings/series", requiredPermission: "SETTINGS_MANAGE" },
+            { title: "Métodos de Pago", href: "/settings/payment-methods", requiredPermission: "SETTINGS_MANAGE" },
             { title: "Seguridad y PIN", href: "/settings/security", requiredPermission: "SETTINGS_MANAGE" },
             { title: "Equipo y Roles", href: "/settings/users", requiredPermission: "SETTINGS_MANAGE" },
         ],

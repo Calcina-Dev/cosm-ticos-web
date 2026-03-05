@@ -73,7 +73,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             {filteredNavItems.map((item) => {
                 const isActive =
                     pathname === item.href ||
-                    pathname.startsWith(item.href + "/");
+                    pathname.startsWith(item.href + "/") ||
+                    (item.subMenuItems && item.subMenuItems.some(sub => pathname === sub.href || pathname.startsWith(sub.href + "/")));
                 const isOpen = openMenus[item.href] ?? isActive;
 
                 if (item.submenu && item.subMenuItems) {
@@ -104,28 +105,39 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                             <CollapsibleContent className="pl-6 space-y-1 mt-1 relative">
                                 {/* Vertical Line for Submenu */}
                                 <div className="absolute left-[1.35rem] top-0 bottom-0 w-px bg-border" />
-                                {item.subMenuItems.map((sub) => {
-                                    const isSubActive = pathname === sub.href || pathname.startsWith(sub.href + "/");
-                                    return (
-                                        <Button
-                                            key={sub.href}
-                                            variant="ghost"
-                                            className={cn(
-                                                "w-full justify-start text-sm h-9 pl-6 relative",
-                                                isSubActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
-                                            )}
-                                            asChild
-                                        >
-                                            <Link
-                                                href={sub.href}
-                                                onClick={onNavigate}
+                                {(() => {
+                                    const matchLengths = item.subMenuItems.map((sub: any) => {
+                                        if (pathname === sub.href) return sub.href.length;
+                                        if (pathname.startsWith(sub.href + "/")) return sub.href.length;
+                                        return 0;
+                                    });
+                                    const maxMatch = Math.max(0, ...matchLengths);
+
+                                    return item.subMenuItems.map((sub: any) => {
+                                        const subMatchLength = pathname === sub.href || pathname.startsWith(sub.href + "/") ? sub.href.length : 0;
+                                        const isSubActive = subMatchLength > 0 && subMatchLength === maxMatch;
+
+                                        return (
+                                            <Button
+                                                key={sub.href}
+                                                variant="ghost"
+                                                className={cn(
+                                                    "w-full justify-start text-sm h-9 pl-6 relative",
+                                                    isSubActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                                asChild
                                             >
-                                                {/* Dot indicator for subitems if needed, or just text */}
-                                                {sub.title}
-                                            </Link>
-                                        </Button>
-                                    );
-                                })}
+                                                <Link
+                                                    href={sub.href}
+                                                    onClick={onNavigate}
+                                                >
+                                                    {/* Dot indicator for subitems if needed, or just text */}
+                                                    {sub.title}
+                                                </Link>
+                                            </Button>
+                                        );
+                                    });
+                                })()}
                             </CollapsibleContent>
                         </Collapsible>
                     );
