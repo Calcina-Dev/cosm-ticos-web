@@ -224,7 +224,7 @@ export default function CashPage() {
               </Button>
             </>
           )}
-          <Link href="/cash/registers">
+          <Link href="/pos/cash/registers">
             <Button
               variant="ghost"
               className="h-11 text-slate-600 hover:bg-slate-200"
